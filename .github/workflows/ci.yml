@@ -10,6 +10,18 @@ permissions:
 jobs:
   checks:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:18-alpine
+        env:
+          POSTGRES_USER: library
+          POSTGRES_PASSWORD: ci-only-password
+          POSTGRES_DB: library_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U library -d library_test"
+          --health-interval 2s --health-timeout 5s --health-retries 30
     steps:
       - uses: actions/checkout@v4
 
@@ -24,13 +36,36 @@ jobs:
       - name: Lint
         run: ruff check .
 
-      - name: Tests
+      - name: Tests (SQLite)
         run: pytest
+
+      - name: Tests (PostgreSQL)
+        run: pytest
+        env:
+          TEST_DATABASE_URL: postgresql+psycopg://library:ci-only-password@localhost:5432/library_test
 
       - name: Validate portfolio.json
         run: python scripts/validate_portfolio.py
 
-      - name: Docker build and run
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Start the database and the API
         run: |
-          docker compose build
-          docker compose run --rm app
+          cp .env.example .env
+          docker compose up --build --detach --wait
+
+      - name: Load the demo data and check the running API
+        run: |
+          docker compose exec -T api python scripts/seed.py
+          docker compose exec -T api python scripts/smoke_test.py
+
+      - name: Show the logs if something failed
+        if: failure()
+        run: docker compose logs
+
+      - name: Stop
+        if: always()
+        run: docker compose down --volumes

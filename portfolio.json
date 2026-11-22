@@ -1,14 +1,14 @@
 {
-  "id": "sd-00",
-  "title": "[PROJECT TITLE]",
+  "id": "sd-02",
+  "title": "Library REST API with Database",
   "track": "software-developer",
-  "summary": "[ONE-SENTENCE SUMMARY]",
-  "skills": ["[SKILL]"],
-  "repo": "https://github.com/VinceVSCode/<REPOSITORY-NAME>",
+  "summary": "A REST API for a small library: books, members and loans in PostgreSQL, with validation, paging, token login and an OpenAPI page.",
+  "skills": ["Python", "REST APIs", "SQL", "PostgreSQL", "Authentication", "Docker", "Alembic"],
+  "repo": "https://github.com/VinceVSCode/sd-02-library-api",
   "demo_url": null,
   "thumbnail": "docs/media/thumbnail.png",
   "demo_media": "docs/media/demo.png",
-  "run_command": "[COMMAND THAT RUNS THE PROJECT]",
-  "status": "template",
-  "version": "0.1.0"
+  "run_command": "docker compose up",
+  "status": "in-progress",
+  "version": "1.0.0"
 }

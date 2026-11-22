@@ -18,11 +18,22 @@ from seed import DemoLogin
 
 
 def call(
-    url: str, token: str | None = None, form: dict[str, str] | None = None
+    url: str,
+    token: str | None = None,
+    form: dict[str, str] | None = None,
+    body: dict[str, object] | None = None,
+    method: str | None = None,
 ) -> tuple[int, bytes]:
-    """Send a GET (or a POST when ``form`` is given). Return the status code and the body."""
-    data = urllib.parse.urlencode(form).encode() if form else None
-    request = urllib.request.Request(url, data=data)
+    """Send a request and return the status code and the body.
+
+    It is a GET, or a POST when ``form`` (a login form) or ``body`` (JSON) is given.
+    """
+    request = urllib.request.Request(url, method=method)
+    if form is not None:
+        request.data = urllib.parse.urlencode(form).encode()
+    elif body is not None:
+        request.data = json.dumps(body).encode()
+        request.add_header("Content-Type", "application/json")
     if token:
         request.add_header("Authorization", f"Bearer {token}")
     try:

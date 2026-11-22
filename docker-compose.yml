@@ -1,0 +1,5 @@
+# Keep this file to what a local run on another machine needs.
+# Add ports, volumes or other services only when the project uses them.
+services:
+  app:
+    build: .

@@ -1,0 +1,14 @@
+{
+  "id": "sd-00",
+  "title": "[PROJECT TITLE]",
+  "track": "software-developer",
+  "summary": "[ONE-SENTENCE SUMMARY]",
+  "skills": ["[SKILL]"],
+  "repo": "https://github.com/VinceVSCode/<REPOSITORY-NAME>",
+  "demo_url": null,
+  "thumbnail": "docs/media/thumbnail.png",
+  "demo_media": "docs/media/demo.png",
+  "run_command": "[COMMAND THAT RUNS THE PROJECT]",
+  "status": "template",
+  "version": "0.1.0"
+}

@@ -3,22 +3,35 @@ requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "project-name"
-version = "0.1.0"
-description = "[ONE-SENTENCE SUMMARY]"
+name = "library-api"
+version = "1.0.0"
+description = "A REST API for a small library: books, members and loans, with PostgreSQL and token login."
 readme = "README.md"
-requires-python = ">=3.11"
+requires-python = ">=3.12"
 license = { text = "MIT" }
-dependencies = []
+dependencies = [
+    "alembic==1.20.1",
+    "fastapi==0.165.0",
+    "psycopg[binary]==3.3.9",
+    "pydantic-settings==2.16.3",
+    "pyjwt==2.15.1",
+    "python-multipart==0.0.34",
+    "sqlalchemy==2.1.9",
+    "uvicorn==0.54.0",
+]
 
 [project.optional-dependencies]
 dev = [
+    "httpx==0.28.1",
     "pytest==9.2.0",
-    "ruff==0.17.5",
+    "ruff==0.17.6",
 ]
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.setuptools.package-data]
+library_api = ["migrations/*.mako", "migrations/versions/*.py"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
@@ -27,7 +40,7 @@ addopts = "-ra"
 
 [tool.ruff]
 line-length = 100
-target-version = "py311"
+target-version = "py312"
 src = ["src", "scripts", "tests"]
 
 [tool.ruff.lint]

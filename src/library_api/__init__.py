@@ -1,3 +1,3 @@
-"""Placeholder package. Rename this folder to the project's package name."""
+"""A REST API for a small library: books, members and loans."""
 
-__version__ = "0.1.0"
+__version__ = "1.0.0"

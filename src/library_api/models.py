@@ -20,10 +20,17 @@ from sqlalchemy import (
     ForeignKey,
     Index,
     String,
+    exists,
     func,
+    select,
     text,
 )
-from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
+from sqlalchemy.orm import DeclarativeBase, Mapped, column_property, mapped_column, relationship
+
+
+def today() -> date:
+    """Return today's date. The tests replace this to move the clock."""
+    return date.today()
 
 
 class Base(DeclarativeBase):
@@ -104,3 +111,15 @@ class Loan(Base):
 
     book: Mapped[Book] = relationship(back_populates="loans")
     member: Mapped[Member] = relationship(back_populates="loans")
+
+    @property
+    def overdue(self) -> bool:
+        """True if the book is still out after its due date."""
+        return self.returned_on is None and self.due_on < today()
+
+
+# A book is available when it has no open loan. Defined here, after Loan exists,
+# so that it can be read on every book and used in filters.
+Book.available = column_property(  # type: ignore[attr-defined]
+    ~exists(select(Loan.id).where(Loan.book_id == Book.id, Loan.returned_on.is_(None)))
+)

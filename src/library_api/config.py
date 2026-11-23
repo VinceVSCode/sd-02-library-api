@@ -7,6 +7,10 @@ from functools import lru_cache
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+# The JWT_SECRET published in .env.example. It is fine for a local run, but anyone
+# can read it, so with it anyone could make a valid token. A test keeps the two equal.
+EXAMPLE_JWT_SECRET = "replace-this-with-a-long-random-string-before-any-real-use"
+
 
 class Settings(BaseSettings):
     """Every setting of the API. Missing or invalid values stop the start-up with a clear error."""
@@ -23,6 +27,10 @@ class Settings(BaseSettings):
 
     jwt_secret: str = Field(min_length=32)
     token_minutes: int = Field(default=30, ge=1, le=24 * 60)
+
+    def uses_example_secret(self) -> bool:
+        """Return True if JWT_SECRET is still the public value from .env.example."""
+        return self.jwt_secret == EXAMPLE_JWT_SECRET
 
     def sqlalchemy_url(self) -> str:
         """Return the database URL the API connects to."""

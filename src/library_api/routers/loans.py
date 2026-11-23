@@ -10,8 +10,10 @@ from sqlalchemy import select
 
 from library_api import models
 from library_api.deps import (
+    FilterId,
     LoggedIn,
     PagingDep,
+    PathId,
     SessionDep,
     commit,
     conflict,
@@ -37,8 +39,8 @@ def list_loans(
     session: SessionDep,
     _user: LoggedIn,
     paging: PagingDep,
-    book_id: int | None = None,
-    member_id: int | None = None,
+    book_id: FilterId = None,
+    member_id: FilterId = None,
     open: bool | None = None,
 ) -> dict[str, Any]:
     """List loans, newest first. Filter by book, by member, or by open (not returned)."""
@@ -53,7 +55,7 @@ def list_loans(
 
 
 @router.get("/{loan_id}", response_model=LoanOut)
-def get_loan(session: SessionDep, _user: LoggedIn, loan_id: int) -> Loan:
+def get_loan(session: SessionDep, _user: LoggedIn, loan_id: PathId) -> Loan:
     """Return one loan."""
     return _get(session, loan_id)
 
@@ -83,7 +85,7 @@ def lend(session: SessionDep, _user: LoggedIn, data: LoanCreate) -> Loan:
 
 
 @router.post("/{loan_id}/return", response_model=LoanOut)
-def return_book(session: SessionDep, _user: LoggedIn, loan_id: int) -> Loan:
+def return_book(session: SessionDep, _user: LoggedIn, loan_id: PathId) -> Loan:
     """Mark the book as returned today. A loan can be returned only once."""
     loan = _get(session, loan_id)
     if loan.returned_on is not None:

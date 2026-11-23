@@ -10,7 +10,7 @@ from sqlalchemy import select
 
 from library_api.deps import SessionDep, SettingsDep
 from library_api.models import User
-from library_api.schemas import Token
+from library_api.schemas import Token, has_control_characters
 from library_api.security import create_token, hash_password, verify_password
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -27,7 +27,11 @@ def log_in(
     form: Annotated[OAuth2PasswordRequestForm, Depends()],
 ) -> Token:
     """Return a token for a librarian. Send it as ``Authorization: Bearer <token>``."""
-    user = session.scalar(select(User).where(User.username == form.username))
+    # A control character (such as NUL) cannot be in a username, and PostgreSQL
+    # would refuse to look it up, so such a name is treated as unknown.
+    user = None
+    if not has_control_characters(form.username):
+        user = session.scalar(select(User).where(User.username == form.username))
     password_ok = verify_password(form.password, user.password_hash if user else _DUMMY_HASH)
     if user is None or not password_ok:
         raise HTTPException(

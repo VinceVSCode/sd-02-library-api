@@ -5,7 +5,7 @@ from __future__ import annotations
 from collections.abc import Iterator
 from typing import Annotated, Any
 
-from fastapi import Depends, HTTPException, Query, Request, status
+from fastapi import Depends, HTTPException, Path, Query, Request, status
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy import Select, func, select
 from sqlalchemy.exc import IntegrityError
@@ -13,6 +13,7 @@ from sqlalchemy.orm import Session
 
 from library_api.config import Settings
 from library_api.models import User
+from library_api.schemas import MAX_ID, SearchText
 from library_api.security import InvalidTokenError, read_token
 
 _bearer = OAuth2PasswordBearer(tokenUrl="auth/token", auto_error=False)
@@ -64,7 +65,7 @@ class Paging:
     def __init__(
         self,
         limit: Annotated[int, Query(ge=1, le=100, description="Items per page.")] = 20,
-        offset: Annotated[int, Query(ge=0, description="Items to skip.")] = 0,
+        offset: Annotated[int, Query(ge=0, le=MAX_ID, description="Items to skip.")] = 0,
     ) -> None:
         self.limit = limit
         self.offset = offset
@@ -77,6 +78,14 @@ class Paging:
 
 
 PagingDep = Annotated[Paging, Depends()]
+
+# An id in the address (for example /books/{book_id}) or in a filter. Ids out of
+# range are refused with 422 before they reach the database.
+PathId = Annotated[int, Path(ge=1, le=MAX_ID)]
+FilterId = Annotated[int | None, Query(ge=1, le=MAX_ID)]
+# Search text: at most 200 characters, no control characters. It is matched as
+# plain text: % and _ have no special meaning.
+Search = Annotated[SearchText | None, Query(description="Text to look for (plain text).")]
 
 
 def not_found(kind: str, item_id: int) -> HTTPException:

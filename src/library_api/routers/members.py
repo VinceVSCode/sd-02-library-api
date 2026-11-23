@@ -10,6 +10,8 @@ from sqlalchemy import or_, select
 from library_api.deps import (
     LoggedIn,
     PagingDep,
+    PathId,
+    Search,
     SessionDep,
     commit,
     conflict,
@@ -39,18 +41,23 @@ def _email_taken(session: SessionDep, email: str, other_than: int | None = None)
 
 @router.get("", response_model=Page[MemberOut])
 def list_members(
-    session: SessionDep, _user: LoggedIn, paging: PagingDep, q: str | None = None
+    session: SessionDep, _user: LoggedIn, paging: PagingDep, q: Search = None
 ) -> dict[str, Any]:
     """List members, oldest first. ``q`` searches name and email."""
     query = select(Member).order_by(Member.id)
     if q:
-        pattern = f"%{q.strip()}%"
-        query = query.where(or_(Member.name.ilike(pattern), Member.email.ilike(pattern)))
+        text = q.strip()
+        query = query.where(
+            or_(
+                Member.name.icontains(text, autoescape=True),
+                Member.email.icontains(text, autoescape=True),
+            )
+        )
     return paging.page(session, query)
 
 
 @router.get("/{member_id}", response_model=MemberOut)
-def get_member(session: SessionDep, _user: LoggedIn, member_id: int) -> Member:
+def get_member(session: SessionDep, _user: LoggedIn, member_id: PathId) -> Member:
     """Return one member."""
     return _get(session, member_id)
 
@@ -69,7 +76,7 @@ def create_member(session: SessionDep, _user: LoggedIn, data: MemberCreate) -> M
 
 @router.patch("/{member_id}", response_model=MemberOut)
 def update_member(
-    session: SessionDep, _user: LoggedIn, member_id: int, data: MemberUpdate
+    session: SessionDep, _user: LoggedIn, member_id: PathId, data: MemberUpdate
 ) -> Member:
     """Change the fields that are sent."""
     member = _get(session, member_id)
@@ -84,7 +91,7 @@ def update_member(
 
 
 @router.delete("/{member_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_member(session: SessionDep, _user: LoggedIn, member_id: int) -> Response:
+def delete_member(session: SessionDep, _user: LoggedIn, member_id: PathId) -> Response:
     """Delete a member who has never borrowed a book."""
     member = _get(session, member_id)
     has_loans = "This member has loans, so they cannot be deleted"

@@ -10,6 +10,8 @@ from sqlalchemy import or_, select
 from library_api.deps import (
     LoggedIn,
     PagingDep,
+    PathId,
+    Search,
     SessionDep,
     commit,
     conflict,
@@ -41,21 +43,26 @@ def _isbn_taken(session: SessionDep, isbn: str, other_than: int | None = None) -
 def list_books(
     session: SessionDep,
     paging: PagingDep,
-    q: str | None = None,
+    q: Search = None,
     available: bool | None = None,
 ) -> dict[str, Any]:
     """List books, oldest first. ``q`` searches title and author; ``available`` filters."""
     query = select(Book).order_by(Book.id)
     if q:
-        pattern = f"%{q.strip()}%"
-        query = query.where(or_(Book.title.ilike(pattern), Book.author.ilike(pattern)))
+        text = q.strip()
+        query = query.where(
+            or_(
+                Book.title.icontains(text, autoescape=True),
+                Book.author.icontains(text, autoescape=True),
+            )
+        )
     if available is not None:
         query = query.where(Book.available == available)  # type: ignore[attr-defined]
     return paging.page(session, query)
 
 
 @router.get("/{book_id}", response_model=BookOut)
-def get_book(session: SessionDep, book_id: int) -> Book:
+def get_book(session: SessionDep, book_id: PathId) -> Book:
     """Return one book."""
     return _get(session, book_id)
 
@@ -73,7 +80,7 @@ def create_book(session: SessionDep, _user: LoggedIn, data: BookCreate) -> Book:
 
 
 @router.patch("/{book_id}", response_model=BookOut)
-def update_book(session: SessionDep, _user: LoggedIn, book_id: int, data: BookUpdate) -> Book:
+def update_book(session: SessionDep, _user: LoggedIn, book_id: PathId, data: BookUpdate) -> Book:
     """Change the fields that are sent."""
     book = _get(session, book_id)
     changes = data.model_dump(exclude_unset=True)
@@ -87,7 +94,7 @@ def update_book(session: SessionDep, _user: LoggedIn, book_id: int, data: BookUp
 
 
 @router.delete("/{book_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_book(session: SessionDep, _user: LoggedIn, book_id: int) -> Response:
+def delete_book(session: SessionDep, _user: LoggedIn, book_id: PathId) -> Response:
     """Delete a book that has never been lent. Its loan history is kept otherwise."""
     book = _get(session, book_id)
     has_loans = "This book has loans, so it cannot be deleted"

@@ -91,9 +91,7 @@ def test_a_malformed_authorization_header_is_refused(client: TestClient) -> None
         assert client.get("/members", headers={"Authorization": header}).status_code == 401
 
 
-def test_books_can_be_read_without_logging_in(
-    client: TestClient, auth: dict[str, str]
-) -> None:
+def test_books_can_be_read_without_logging_in(client: TestClient, auth: dict[str, str]) -> None:
     book = add_book(client, auth)
     assert client.get("/books").status_code == 200
     assert client.get(f"/books/{book['id']}").status_code == 200

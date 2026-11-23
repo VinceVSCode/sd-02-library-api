@@ -6,6 +6,8 @@ The OpenAPI page, where every endpoint can be tried, is at /docs.
 
 from __future__ import annotations
 
+import logging
+
 from fastapi import FastAPI, status
 from fastapi.responses import JSONResponse, RedirectResponse
 from sqlalchemy import text
@@ -17,6 +19,14 @@ from library_api.config import Settings, get_settings
 from library_api.db import make_engine
 from library_api.deps import SessionDep
 from library_api.routers import auth, books, loans, members
+
+log = logging.getLogger("library_api")
+
+EXAMPLE_SECRET_WARNING = (
+    "JWT_SECRET is the example value from .env.example. That is fine on your own "
+    "machine, but anyone can read it and make valid tokens: set a long random "
+    "JWT_SECRET in .env before this API is reachable by anyone else."
+)
 
 DESCRIPTION = """
 A REST API for a small library. Anyone can read the books; changing data, and
@@ -30,6 +40,8 @@ everything about members and loans, needs a librarian's login.
 def create_app(settings: Settings | None = None) -> FastAPI:
     """Build the app. The tests pass their own settings (a test database)."""
     settings = settings or get_settings()
+    if settings.uses_example_secret():
+        log.warning(EXAMPLE_SECRET_WARNING)
     app = FastAPI(title="Library API", version=__version__, description=DESCRIPTION)
     engine = make_engine(settings.sqlalchemy_url())
     app.state.settings = settings
@@ -56,4 +68,3 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         return JSONResponse({"status": "ok", "database": "ok"})
 
     return app
-

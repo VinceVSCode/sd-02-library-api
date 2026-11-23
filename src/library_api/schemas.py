@@ -18,9 +18,38 @@ from pydantic import (
     model_validator,
 )
 
-Text = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=200)]
+# The largest id PostgreSQL's "integer" column holds. Larger ids, and offsets
+# beyond it, are refused with 422 instead of reaching the database.
+MAX_ID = 2_147_483_647
 
 _EMAIL = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
+
+
+def has_control_characters(value: str) -> bool:
+    """Return True if the text holds an invisible control character (such as NUL or a tab)."""
+    return any(ord(c) < 32 or 127 <= ord(c) < 160 for c in value)
+
+
+def refuse_control_characters(value: str) -> str:
+    """Return the text, or raise ``ValueError`` if it holds a control character.
+
+    PostgreSQL refuses the NUL character outright, and the others have no place
+    in a title, a name or a search.
+    """
+    if has_control_characters(value):
+        raise ValueError("control characters (such as NUL or a tab) are not allowed")
+    return value
+
+
+Text = Annotated[
+    str,
+    StringConstraints(strip_whitespace=True, min_length=1, max_length=200),
+    AfterValidator(refuse_control_characters),
+]
+SearchText = Annotated[
+    str, StringConstraints(max_length=200), AfterValidator(refuse_control_characters)
+]
+Id = Annotated[int, Field(ge=1, le=MAX_ID)]
 
 
 def isbn13_check_digit(first_twelve: str) -> str:
@@ -35,13 +64,13 @@ def normalise_isbn(value: str) -> str:
     Raises ``ValueError`` if the length or the check digit is wrong.
     """
     digits = value.replace("-", "").replace(" ", "").upper()
-    if re.fullmatch(r"\d{9}[\dX]", digits):
+    if re.fullmatch(r"[0-9]{9}[0-9X]", digits):
         total = sum((10 - i) * (10 if c == "X" else int(c)) for i, c in enumerate(digits))
         if total % 11:
             raise ValueError("the ISBN-10 check digit is wrong")
         first_twelve = "978" + digits[:9]
         return first_twelve + isbn13_check_digit(first_twelve)
-    if re.fullmatch(r"\d{13}", digits):
+    if re.fullmatch(r"[0-9]{13}", digits):
         if isbn13_check_digit(digits[:12]) != digits[12]:
             raise ValueError("the ISBN-13 check digit is wrong")
         return digits
@@ -51,7 +80,7 @@ def normalise_isbn(value: str) -> str:
 def normalise_email(value: str) -> str:
     """Return the email address trimmed and in lower case, after a basic shape check."""
     value = value.strip().lower()
-    if len(value) > 254 or not _EMAIL.fullmatch(value):
+    if len(value) > 254 or has_control_characters(value) or not _EMAIL.fullmatch(value):
         raise ValueError("not a valid email address")
     return value
 
@@ -143,8 +172,8 @@ class MemberOut(BaseModel):
 
 
 class LoanCreate(Strict):
-    book_id: int = Field(gt=0)
-    member_id: int = Field(gt=0)
+    book_id: Id
+    member_id: Id
     days: int = Field(default=14, ge=1, le=60, description="Days until the book is due.")
 
 

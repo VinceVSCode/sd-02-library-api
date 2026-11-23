@@ -55,9 +55,7 @@ def test_the_database_itself_refuses_a_second_open_loan(
     """The rule holds even if two requests pass the API's check at the same moment."""
     book, member = add_book(client, auth), add_member(client, auth)
     lend(client, auth, book, member)
-    session.add(
-        Loan(book_id=book["id"], member_id=member["id"], loaned_on=TODAY, due_on=TODAY)
-    )
+    session.add(Loan(book_id=book["id"], member_id=member["id"], loaned_on=TODAY, due_on=TODAY))
     with pytest.raises(IntegrityError):
         session.commit()
     session.rollback()

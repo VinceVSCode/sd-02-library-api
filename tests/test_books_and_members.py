@@ -61,18 +61,14 @@ def test_a_book_is_updated_only_where_fields_are_sent(
     assert cleared.json()["published_year"] is None
 
 
-def test_a_required_field_cannot_be_set_to_null(
-    client: TestClient, auth: dict[str, str]
-) -> None:
+def test_a_required_field_cannot_be_set_to_null(client: TestClient, auth: dict[str, str]) -> None:
     book = add_book(client, auth)
     answer = client.patch(f"/books/{book['id']}", json={"title": None}, headers=auth)
     assert answer.status_code == 422
     assert "title cannot be null" in answer.text
 
 
-def test_an_update_cannot_take_another_books_isbn(
-    client: TestClient, auth: dict[str, str]
-) -> None:
+def test_an_update_cannot_take_another_books_isbn(client: TestClient, auth: dict[str, str]) -> None:
     add_book(client, auth, isbn=ISBNS[0])
     second = add_book(client, auth, isbn=ISBNS[1])
     answer = client.patch(f"/books/{second['id']}", json={"isbn": ISBNS[0]}, headers=auth)

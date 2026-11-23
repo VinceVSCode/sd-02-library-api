@@ -119,11 +119,12 @@ The schema and the design choices are in [docs/decisions.md](docs/decisions.md).
 
 | Check | Result |
 |---|---|
-| Tests | 156 pass on SQLite; CI runs them on PostgreSQL 18 as well |
+| Tests | 156 pass, on SQLite and on PostgreSQL 18 |
 | Protected endpoints | each of the 12 is tested without a token and with a forged one (401) |
 | Lint (`ruff check .`) | passes |
 | Migrations | a test checks that they match the models, and that they can be undone and redone |
-| Whole stack | CI starts `docker compose`, loads the demo data and checks the running API with `scripts/smoke_test.py` |
+| Whole stack | `docker compose up` starts both services, applies the migrations and passes all 7 checks of `scripts/smoke_test.py`; CI is set up to do the same on every push |
+| Database down | `/health` answers 503 within about 3 seconds, and 200 again once the database is back |
 
 ## Tests
 

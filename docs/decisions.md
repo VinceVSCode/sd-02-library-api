@@ -16,6 +16,10 @@ a choice made by the project owner; the others were made while building it.
 | 2026-11-22 | Tests run on SQLite by default and on PostgreSQL in CI | PostgreSQL only | `pytest` works on a fresh clone without Docker. CI runs the same tests on PostgreSQL, the real database. Both databases are built by the real migrations. |
 | 2026-11-22 | The API container runs the migrations before it starts | a separate migration step | `docker compose up` is the only command a visitor needs. |
 | 2026-11-22 | Settings come from environment variables, with `.env.example` | a settings file | Docker Compose and CI pass environment variables; no secret is ever in the repository. |
+| 2026-11-23 | Ids and offsets above 2,147,483,647 are refused with 422 (owner) | let the database fail (500), use bigint columns | A library will never need such numbers, so they are refused before they reach the database. |
+| 2026-11-23 | Text with control characters is refused with 422 (owner) | strip them silently | PostgreSQL refuses NUL, and none of them belongs in a title, a name or a search. Refusing them tells the caller what is wrong. |
+| 2026-11-23 | Search is plain text: `%` and `_` are not wildcards (owner) | keep the wildcards | A search finds the text that was typed, and nothing else. |
+| 2026-11-23 | A warning at start-up when JWT_SECRET is the public example (owner) | refuse to start, only the README note | The one-command quick start keeps working, and the log says plainly what to change before others can reach the API. |
 
 ## Schema
 

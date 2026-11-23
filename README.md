@@ -2,7 +2,7 @@
 
 A REST API for a small library: books, members and loans in PostgreSQL, with validation, paging, token login and an OpenAPI page.
 
-> **Status:** pending quality review. This project has not had its final review yet.
+> **Status:** complete. Passed its quality review on 2026-11-23 (version 1.0.1).
 
 ## Demo
 
@@ -91,9 +91,9 @@ uvicorn library_api.app:create_app --factory --reload
 | `POST /loans/{id}/return` | yes | Marks the loan as returned today. |
 | `GET /health` | | Says whether the API and its database answer (503 if the database does not). |
 
-Every list takes `limit` (1 to 100, default 20) and `offset`, and returns `items`, `total`, `limit` and `offset`.
+Every list takes `limit` (1 to 100, default 20) and `offset`, and returns `items`, `total`, `limit` and `offset`. The search text `q` is plain text of up to 200 characters: `%` and `_` are searched as themselves, not as wildcards. Ids go from 1 to 2,147,483,647, the largest number PostgreSQL's `integer` column holds.
 
-Answers use the usual status codes: 401 without a valid token, 404 for a missing item, 409 when a request clashes with the data (an ISBN or email already used, a book already lent, a loan already returned, deleting a book or member with loans), and 422 for invalid input, naming the field.
+Answers use the usual status codes: 401 without a valid token, 404 for a missing item, 409 when a request clashes with the data (an ISBN or email already used, a book already lent, a loan already returned, deleting a book or member with loans), and 422 for invalid input, naming the field. Invalid input includes ids or offsets out of range, and text with control characters such as NUL or a tab.
 
 ## How it works
 
@@ -119,7 +119,7 @@ The schema and the design choices are in [docs/decisions.md](docs/decisions.md).
 
 | Check | Result |
 |---|---|
-| Tests | 156 pass, on SQLite and on PostgreSQL 18 |
+| Tests | 191 pass, on SQLite and on PostgreSQL 18 |
 | Protected endpoints | each of the 12 is tested without a token and with a forged one (401) |
 | Lint (`ruff check .`) | passes |
 | Migrations | a test checks that they match the models, and that they can be undone and redone |
@@ -150,6 +150,17 @@ python scripts/validate_portfolio.py
 - Passwords use scrypt with N=2^14 to keep logins fast; OWASP recommends N=2^17 for production.
 - No rate limiting on the login endpoint.
 - The demo data is made up, including the ISBNs (valid check digits, but not real editions).
+
+## Changes
+
+**1.0.1** (2026-11-23), after the quality review:
+
+- An id above 2,147,483,647 (in the address, a filter or a request body), or an `offset` above 9.2 quintillion, crashed the request with a 500 error, because PostgreSQL could not hold the number. Ids must now be 1 to 2,147,483,647 and offsets at most 2,147,483,647; anything else gets a 422 answer.
+- A NUL character in a title, a name, an email or a search crashed the request with a 500 error, because PostgreSQL refuses it. Text with a control character (NUL, a tab, a line break and the like) now gets a 422 answer. A username with one is refused like a wrong password.
+- `%` and `_` in a search worked as wildcards: `?q=%` listed every book. The search now treats every character as plain text.
+- ISBNs written with other digit forms (for example Arabic-Indic digits) passed the format check. Only the digits 0 to 9 are accepted now.
+- The API now logs a warning at start-up when `JWT_SECRET` is still the public example from `.env.example`.
+- Each of these has a test that failed before the fix: 35 new tests, 191 in total.
 
 ## Considered improvements
 

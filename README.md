@@ -51,6 +51,8 @@ You need Docker. Run these in the project folder.
 
 Then open **http://localhost:8000/docs**. Press **Authorize**, log in with the demo librarian from `.env` (`DEMO_USERNAME` and `DEMO_PASSWORD`), and try any endpoint. To stop, press Ctrl+C; `docker compose down --volumes` also deletes the data.
 
+The image is also published for other projects to use, as `ghcr.io/vincevscode/sd-02-library-api:<version>` (for example `1.0.1`). [SD-03](https://github.com/VinceVSCode/sd-03-react-fullstack), a React app for this API, runs it that way.
+
 ### Run without Docker
 
 You need Python 3.12 or newer (tested with 3.13) and a PostgreSQL server; set its address in `.env` (`POSTGRES_HOST`, or a full `DATABASE_URL`). Create a virtual environment and activate it:
